@@ -49,6 +49,30 @@ bash perf stat -p <PID>
 ##  3.3
 
 Маємо програму для [кидків](lb3.3.py) кубика на пайтоні та текстовий документ, куди записуються [результати](DResults.txt):
+```python
+import random
+import os
+
+def roll():
+	return random.randint(1,6)
+
+def diceroll(filename, max_rolls= 10000):
+	try:
+		with open(filename, 'w') as f:
+			for i in range(max_rolls):
+				result = roll()
+				f.write(f"roll {i + 1}: {result}\n")
+	except OSError as e:
+		print(f"Error: {e}")
+		if "File too large" in str(e):
+			print("FIle size overlimited")
+
+
+if __name__ == "__main__":
+	output_file = "DResults.txt"
+	diceroll(output_file)
+```
+
 
 Перед тим, як її запустити встановлюю обмеження 10 блоків по 512 байт:
 ```bash
@@ -77,7 +101,33 @@ apt update && apt install -y python3 gcc make perf gdb
 
 ##  3.4
 
-Маємо програму яка імітує [лотерею](lb3.4.py)
+Маємо програму яка імітує [лотерею](lb3.4.py):
+```python
+import random
+import time
+import signal
+import sys
+
+def timelimit(signum, frame):
+	print("CPU time limit over")
+	sys.exit(1)
+
+signal.signal(signal.SIGXCPU, timelimit)
+
+def lottery():
+	seven = random.sample(range(1,50),7)
+	six = random.sample(range(1,37),6)
+	return seven, six
+
+def main():
+	print("Lottery started")
+	while True:
+		seven, six = lottery()
+		print(f"7 of 49: {seven} | 6 of 36: {six}")
+
+if __name__ == "__main__":
+	main()
+```
 
 Перед запуском встановлюю ліміт на 2 секунди:
 ```bash
@@ -95,6 +145,43 @@ bash ulimit -t 2
 ##  3.5
 
 Створюємо програму для [копіювання](lb3.5.py) вмісту текста. Вона приймає 2 аргументи як [вхідний](input.txt) та [вихідний](output.txt) тексти.
+```python
+import sys
+import os
+
+MAX_FILE_SIZE = 1024 * 1024 * 1
+
+def main():
+	if len(sys.argv) != 3:
+		print("Program need two arguments")
+		sys.exit(1)
+
+	source = sys.argv[1]
+	target = sys.argv[2]
+
+	if not os.access(source, os.R_OK):
+		print(f"Cannot open file {source}  for reading")
+		sys.exit(1)
+
+	with open(source, "rb") as src, open(target, "wb") as dst:
+		total_written = 0
+		while True:
+			chunk = src.read(4096)
+			if not chunk:
+				break
+			total_written += len(chunk)
+
+			if total_written > MAX_FILE_SIZE:
+				print("File size limit over")
+				sys.exit(1)
+
+
+			dst.write(chunk)
+	print(f"Copied successfully ({total_written} bytes)")
+
+if __name__ == "__main__":
+	main()
+```
 
 Запускаємо перший раз:
 
